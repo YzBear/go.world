@@ -1,0 +1,47 @@
+version: '3'
+
+volumes:
+  postgres_data:
+  postgres_data_backups:
+  media:
+
+services:
+  django: &django
+    image: ghcr.io/yufuquant/yufuquant-dev:latest
+    container_name: yufuquant_dev_django
+    working_dir: /app
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - media:/app/yufuquant/media
+    env_file:
+      - ./.envs/.django
+      - ./.envs/.postgres
+    ports:
+      - "8000:8000"
+    command: /start.sh
+
+  postgres:
+    image: ghcr.io/zmrenwu/docker-postgresql:latest
+    container_name: yufuquant_dev_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_backups:/backups
+    env_file:
+      - ./.envs/.postgres
+
+  redis:
+    image: redis:5.0
+    container_name: yufuquant_dev_redis
+
+  node:
+    image: ghcr.io/yufuquant/yufuquant-frontend-dev:latest
+    container_name: yufuquant_dev_node
+    volumes:
+      # http://jdlm.info/articles/2016/03/06/lessons-building-node-app-docker.html
+      - /app/node_modules
+      - ./config.js:/app/public/config.js
+    command: npm run serve
+    ports:
+      - "8080:8080"
